@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard - AquaPure</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      background: linear-gradient(135deg, #0a0f18, #1c2431);
+      color: #fff;
+      margin: 0;
+      padding: 0;
+    }
+
+    header.navbar {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 15px 25px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
+
+    header h1 { font-size: 1.4rem; margin: 0; }
+
+    .tab-link, .logout-btn {
+      background: #4A90E2;
+      border: none;
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 6px;
+      margin-left: 10px;
+      cursor: pointer;
+    }
+
+    .tab-link.active { background: #50E3C2; color: #000; }
+    .tab-link:hover, .logout-btn:hover { opacity: 0.8; }
+
+    .dashboard-box {
+      margin: 30px auto;
+      max-width: 1000px;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.4);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 1.5rem;
+      color: #50E3C2;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: rgba(255,255,255,0.1);
+    }
+
+    th, td {
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,0.2);
+      text-align: center;
+    }
+
+    th { background: #4A90E2; }
+
+    button.action {
+      background: #50E3C2;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 6px;
+      color: #000;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button.action:hover { opacity: 0.8; }
+
+    #incomeChart {
+      width: 330px !important;
+      height: 330px !important;
+    }
+
+    .income-section {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      align-items: center;
+      gap: 25px;
+    }
+
+    .income-summary {
+      background: rgba(255, 255, 255, 0.15);
+      padding: 20px 30px;
+      border-radius: 12px;
+      width: 260px;
+      text-align: left;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+    }
+
+    .income-summary p {
+      margin: 10px 0;
+      font-size: 1.1rem;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <header class="navbar">
+    <h1>Welcome, Admin!</h1>
+    <div>
+      <button class="tab-link active" onclick="showSection('orders')">Orders</button>
+      <button class="tab-link" onclick="showSection('concerns')">Concerns</button>
+      <button class="tab-link" onclick="showSection('income')">Income</button>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- ORDERS TAB -->
+    <section id="orders" class="tab-content active">
+      <div class="dashboard-box">
+        <h2>Customer Orders</h2>
+        <table id="ordersTable">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Gallon Type</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- CONCERNS TAB -->
+    <section id="concerns" class="tab-content" style="display:none;">
+      <div class="dashboard-box">
+        <h2>Customer Concerns</h2>
+        <table id="concernTable">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Message</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- INCOME TAB -->
+    <section id="income" class="tab-content" style="display:none;">
+      <div class="dashboard-box">
+        <h2>Income Overview</h2>
+        <div class="income-section">
+          <div class="income-summary">
+            <p>💰 Daily Income: ₱<span id="dailyIncome">0</span></p>
+            <p>📅 Weekly Income: ₱<span id="weeklyIncome">0</span></p>
+            <p>🗓️ Monthly Income: ₱<span id="monthlyIncome">0</span></p>
+          </div>
+          <canvas id="incomeChart"></canvas>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    if (localStorage.getItem("adminLoggedIn") !== "true") {
+      window.location.href = "admin-login.html";
+    }
+
+    let chart;
+
+    function showSection(id) {
+      document.querySelectorAll(".tab-content").forEach(sec => sec.style.display = "none");
+      document.getElementById(id).style.display = "block";
+      document.querySelectorAll(".tab-link").forEach(btn => btn.classList.remove("active"));
+      document.querySelector(`[onclick="showSection('${id}')"]`).classList.add("active");
+    }
+
+    function loadOrders() {
+      const orders = JSON.parse(localStorage.getItem("orders") || "[]");
+      const tbody = document.querySelector("#ordersTable tbody");
+      tbody.innerHTML = orders.map((o, i) => `
+        <tr>
+          <td>${o.name}</td>
+          <td>${o.gallonType}</td>
+          <td>${o.status}</td>
+          <td>
+            ${o.status === "Pending" 
+              ? `<button class='action' onclick='updateStatus(${i}, "Water is on the way")'>Accept</button>` 
+              : o.status === "Water is on the way" 
+              ? `<button class='action' onclick='updateStatus(${i}, "Successful")'>Delivered</button>`
+              : "✔ Done"}
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function loadConcerns() {
+      const concerns = JSON.parse(localStorage.getItem("concerns") || "[]");
+      const tbody = document.querySelector("#concernTable tbody");
+      tbody.innerHTML = concerns.map(c => `
+        <tr>
+          <td>${c.name}</td>
+          <td>${c.msg}</td>
+        </tr>
+      `).join("");
+    }
+
+    function updateStatus(index, newStatus) {
+      const orders = JSON.parse(localStorage.getItem("orders") || "[]");
+      orders[index].status = newStatus;
+      localStorage.setItem("orders", JSON.stringify(orders));
+      loadOrders();
+      calculateIncome();
+    }
+
+    function calculateIncome() {
+      const orders = JSON.parse(localStorage.getItem("orders") || "[]");
+      const successful = orders.filter(o => o.status === "Successful");
+
+      let totalDaily = 0;
+      successful.forEach(o => {
+        if (o.gallonType === "Refill") totalDaily += 30;
+        if (o.gallonType === "New Gallon") totalDaily += 250;
+      });
+
+      const totalWeekly = totalDaily * 7;
+      const totalMonthly = totalDaily * 30;
+
+      document.getElementById("dailyIncome").textContent = totalDaily;
+      document.getElementById("weeklyIncome").textContent = totalWeekly;
+      document.getElementById("monthlyIncome").textContent = totalMonthly;
+
+      renderChart(totalDaily, totalWeekly, totalMonthly);
+    }
+
+    function renderChart(daily, weekly, monthly) {
+      const ctx = document.getElementById("incomeChart").getContext("2d");
+      if (chart) chart.destroy();
+      chart = new Chart(ctx, {
+        type: "doughnut",
+        data: {
+          labels: ["Daily", "Weekly", "Monthly"],
+          datasets: [{
+            data: [daily, weekly, monthly],
+            backgroundColor: [
+              "rgba(80, 227, 194, 0.9)",
+              "rgba(74, 144, 226, 0.9)",
+              "rgba(255, 206, 86, 0.9)"
+            ],
+            borderColor: "#1c2431",
+            borderWidth: 3,
+          }]
+        },
+        options: {
+          cutout: "70%",
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: { color: "#fff" }
+            }
+          }
+        }
+      });
+    }
+
+    function logout() {
+      localStorage.removeItem("adminLoggedIn");
+      window.location.href = "adminlogin.html";
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      loadOrders();
+      loadConcerns();
+      calculateIncome();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Dashboard - Water Gallon Ordering</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- === NAVBAR ON TOP === -->
+  <header class="navbar">
+    <div class="nav-left">
+      <img src="img/tyy.webp" alt="User Icon" class="welcome-icon">
+      <h1>Aqua</h1>
+    </div>
+    <div class="nav-right">
+      <button class="tab-link active" onclick="showSection('dashboard')">Dashboard</button>
+      <button class="tab-link" onclick="showSection('orders')">My Orders</button>
+      <button class="tab-link" onclick="showSection('concerns')">Concerns</button>
+      <button onclick="openPopup('aboutPopup')">About Us</button>
+      <button onclick="openPopup('contactPopup')">Contact Us</button>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+  </header>
+
+  <!-- === MAIN CONTENT === -->
+  <main>
+    <div class="content">
+      <!-- DASHBOARD -->
+      <section id="dashboard" class="tab-content active">
+        <div class="form-image-container">
+          <form id="orderForm" class="dashboard-box">
+            <h2>Place Your Order</h2>
+
+            <label for="name">Full Name</label>
+            <input type="text" id="name" placeholder="Enter your name" required>
+
+            <label for="contact">Contact Number</label>
+            <input type="text" id="contact" placeholder="Enter contact number" required>
+
+            <label for="address">Address/location</address></label>
+            <input type="text" id="contact" placeholder="Enter address" required>
+
+            <label for="gallonType">Type of Gallon</label>
+            <select id="gallonType" required>
+              <option value="">-- Select Type --</option>
+              <option value="New Gallon">New Gallon</option>
+              <option value="Refill">Refill</option>
+            </select>
+
+            <label for="waterType">Water Type</label>
+            <select id="waterType" required>
+              <option value="">-- Select Water Type --</option>
+              <option value="Purified">Purified</option>
+              <option value="Mineral">Mineral</option>
+              <option value="Distilled">Distilled</option>
+            </select>
+
+            <button type="button" class="btn" onclick="placeOrder()">Place Order</button>
+          </form>
+
+          <div class="small-image">
+            <img src="img/waterr" alt="Water Image">
+            <div class="banner-text"><h3>“Water is life — drink clean, live well.”</h3></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- MY ORDERS -->
+      <section id="orders" class="tab-content">
+        <div class="form-image-container">
+          <div class="dashboard-box">
+            <h2>My Orders</h2>
+            <table id="orderTable">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Contact</th>
+                  <th>Gallon Type</th>
+                  <th>Water Type</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div class="small-image">
+            <img src="img/waterr" alt="Order Image">
+            <div class="banner-text"><h3>Track your water orders anytime!</h3></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CONCERNS -->
+      <section id="concerns" class="tab-content">
+        <div class="form-image-container">
+          <form id="concernForm" class="dashboard-box">
+            <h2>Submit Your Concern</h2>
+            <label for="concernName">Full Name</label>
+            <input type="text" id="concernName" placeholder="Enter your name" required>
+
+            <label for="concernMsg">Concern Message</label>
+            <textarea id="concernMsg" rows="4" placeholder="Enter your concern..." required></textarea>
+
+            <button type="button" class="btn" onclick="submitConcern()">Submit Concern</button>
+          </form>
+
+          <div class="small-image">
+            <img src="img/waterr" alt="Concern Image">
+            <div class="banner-text"><h3>Your feedback helps us serve better!</h3></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- === POPUPS === -->
+  <div class="popup" id="aboutPopup">
+    <h3>About Us</h3>
+    <p>We are a water refilling station committed to delivering clean and safe water to your doorstep.</p>
+    <button onclick="closePopup('aboutPopup')">Close</button>
+  </div>
+
+  <div class="popup" id="contactPopup">
+    <h3>Contact Us</h3>
+    <p>📞 0953-258-4225<br>📧 aquapure@gmail.com<br>📘 FB: AquaPure Refilling Station</p>
+    <button onclick="closePopup('contactPopup')">Close</button>
+  </div>
+
+  <!-- === SCRIPT === -->
+  <script>
+    // --- Navigation ---
+    const tabs = document.querySelectorAll('.tab-link');
+    const contents = document.querySelectorAll('.tab-content');
+    function showSection(id) {
+      tabs.forEach(btn => btn.classList.remove('active'));
+      contents.forEach(sec => sec.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      document.querySelector(`[onclick="showSection('${id}')"]`).classList.add('active');
+    }
+
+    // --- Popup Functions ---
+    function openPopup(id) { document.getElementById(id).classList.add('active'); }
+    function closePopup(id) { document.getElementById(id).classList.remove('active'); }
+
+    // --- Place Order ---
+    function placeOrder() {
+      const name = document.getElementById('name').value.trim();
+      const contact = document.getElementById('contact').value.trim();
+      const gallonType = document.getElementById('gallonType').value;
+      const waterType = document.getElementById('waterType').value;
+
+      if (!name || !contact || !gallonType || !waterType) {
+        alert('Please fill all fields before placing your order.');
+        return;
+      }
+
+      const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+      orders.push({ name, contact, gallonType, waterType, status: 'Pending' });
+      localStorage.setItem('orders', JSON.stringify(orders));
+
+      alert('✅ Order placed successfully!');
+      document.getElementById('orderForm').reset();
+      loadOrders();
+      showSection('orders');
+    }
+
+    // --- Load Orders ---
+    function loadOrders() {
+      const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+      const tbody = document.querySelector('#orderTable tbody');
+      tbody.innerHTML = orders.map(o => `
+        <tr>
+          <td>${o.name}</td>
+          <td>${o.contact}</td>
+          <td>${o.gallonType}</td>
+          <td>${o.waterType}</td>
+          <td><span class="pending">${o.status}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    // --- Submit Concern ---
+    function submitConcern() {
+      const name = document.getElementById('concernName').value.trim();
+      const msg = document.getElementById('concernMsg').value.trim();
+
+      if (!name || !msg) {
+        alert('Please fill out all fields.');
+        return;
+      }
+
+      const concerns = JSON.parse(localStorage.getItem('concerns') || '[]');
+      concerns.push({ name, msg });
+      localStorage.setItem('concerns', JSON.stringify(concerns));
+
+      alert('✅ Concern submitted successfully!');
+      document.getElementById('concernForm').reset();
+    }
+
+    // --- Logout ---
+    function logout() {
+      window.location.href = "login.html";
+    }
+
+    document.addEventListener('DOMContentLoaded', loadOrders);
+  </script>
+</body>
+</html>

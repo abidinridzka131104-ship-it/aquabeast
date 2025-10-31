@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Customer Login</title>
+  <link rel="stylesheet" href="logins.css" />
+</head>
+<body class="center-page">
+  <div class="auth-container">
+    <div class="auth-card">
+      <h1 class="title">Aquabeast</h1>
+      <h2>Customer Login</h2>
+
+      <form id="loginForm" class="form active">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="loginUsername" placeholder="Enter username" required />
+        </div>
+
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="loginPassword" placeholder="Enter password" required />
+        </div>
+
+        <button type="submit" class="btn">Login</button>
+        <p class="toggle">Don’t have an account? <a href="register.html">Register here</a></p>
+        <p class="toggle">Admin? <a href="adminlogin.html">Go to Admin Login</a></p>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const loginForm = document.getElementById("loginForm");
+    loginForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const user = loginUsername.value.trim();
+      const pass = loginPassword.value.trim();
+
+      const stored = localStorage.getItem(user);
+      if (stored) {
+        const data = JSON.parse(stored);
+        if (data.password === pass) {
+          window.location.href = "customer.html";
+        } else {
+          alert("Incorrect password!");
+        }
+      } else {
+        alert("User not found!");
+      }
+    });
+  </script>
+</body>
+</html>
